@@ -1,0 +1,100 @@
+version: "1.0"
+
+project:
+  name: "syraa-clinic-ai"
+  description: "SYRAA Clinic Voice AI Receptionist System"
+
+services:
+  mcp-server:
+    name: "syraa-mcp-server"
+    type: "docker"
+    dockerfile: "Dockerfile"
+    port: 8000
+    healthcheck:
+      path: "/health"
+      interval: 30
+      timeout: 10
+      retries: 3
+    
+    environment:
+      # Google Calendar
+      GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID}"
+      GOOGLE_CLIENT_SECRET: "${GOOGLE_CLIENT_SECRET}"
+      GOOGLE_REDIRECT_URI: "${GOOGLE_REDIRECT_URI}"
+      
+      # LiveKit
+      LIVEKIT_URL: "${LIVEKIT_URL}"
+      LIVEKIT_API_KEY: "${LIVEKIT_API_KEY}"
+      LIVEKIT_API_SECRET: "${LIVEKIT_API_SECRET}"
+      
+      # Plivo
+      PLIVO_AUTH_ID: "${PLIVO_AUTH_ID}"
+      PLIVO_AUTH_TOKEN: "${PLIVO_AUTH_TOKEN}"
+      PLIVO_PHONE_NUMBER: "${PLIVO_PHONE_NUMBER}"
+      
+      # Supabase
+      SUPABASE_URL: "${SUPABASE_URL}"
+      SUPABASE_KEY: "${SUPABASE_KEY}"
+      
+      # AI Services
+      GOOGLE_API_KEY: "${GOOGLE_API_KEY}"
+      GEMINI_MODEL: "${GEMINI_MODEL}"
+      GEMINI_TEMPERATURE: "${GEMINI_TEMPERATURE}"
+      DEEPGRAM_API_KEY: "${DEEPGRAM_API_KEY}"
+      ELEVEN_API_KEY: "${ELEVEN_API_KEY}"
+      OPENAI_API_KEY: "${OPENAI_API_KEY}"
+    
+    resources:
+      memory: "512Mi"
+      cpu: "0.5"
+    
+    scaling:
+      min: 1
+      max: 3
+      target_cpu: 70
+
+  agent:
+    name: "syraa-agent"
+    type: "docker"
+    dockerfile: "Dockerfile"
+    command: ["python", "agent.py"]
+    depends_on:
+      - mcp-server
+    
+    environment:
+      # Same environment variables as MCP server
+      GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID}"
+      GOOGLE_CLIENT_SECRET: "${GOOGLE_CLIENT_SECRET}"
+      GOOGLE_REDIRECT_URI: "${GOOGLE_REDIRECT_URI}"
+      LIVEKIT_URL: "${LIVEKIT_URL}"
+      LIVEKIT_API_KEY: "${LIVEKIT_API_KEY}"
+      LIVEKIT_API_SECRET: "${LIVEKIT_API_SECRET}"
+      PLIVO_AUTH_ID: "${PLIVO_AUTH_ID}"
+      PLIVO_AUTH_TOKEN: "${PLIVO_AUTH_TOKEN}"
+      PLIVO_PHONE_NUMBER: "${PLIVO_PHONE_NUMBER}"
+      SUPABASE_URL: "${SUPABASE_URL}"
+      SUPABASE_KEY: "${SUPABASE_KEY}"
+      GOOGLE_API_KEY: "${GOOGLE_API_KEY}"
+      GEMINI_MODEL: "${GEMINI_MODEL}"
+      GEMINI_TEMPERATURE: "${GEMINI_TEMPERATURE}"
+      DEEPGRAM_API_KEY: "${DEEPGRAM_API_KEY}"
+      ELEVEN_API_KEY: "${ELEVEN_API_KEY}"
+      OPENAI_API_KEY: "${OPENAI_API_KEY}"
+      
+      # Internal service URL
+      MCP_SERVER_URL: "http://syraa-mcp-server:8000"
+    
+    resources:
+      memory: "1Gi"
+      cpu: "1"
+    
+    scaling:
+      min: 1
+      max: 2
+      target_cpu: 80
+
+domains:
+  - name: "syraa-api"
+    service: "mcp-server"
+    port: 8000
+    ssl: true

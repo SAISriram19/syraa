@@ -1,0 +1,87 @@
+version: '3.8'
+
+services:
+  syraa-mcp-server:
+    build: .
+    container_name: syraa-mcp-server
+    ports:
+      - "8000:8000"
+    environment:
+      # Google Calendar
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
+      
+      # LiveKit (for SIP/voice)
+      - LIVEKIT_URL=${LIVEKIT_URL}
+      - LIVEKIT_API_KEY=${LIVEKIT_API_KEY}
+      - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET}
+      
+      # Plivo Credentials
+      - PLIVO_AUTH_ID=${PLIVO_AUTH_ID}
+      - PLIVO_AUTH_TOKEN=${PLIVO_AUTH_TOKEN}
+      - PLIVO_PHONE_NUMBER=${PLIVO_PHONE_NUMBER}
+      
+      # Supabase
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+      
+      # Google Gemini
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - GEMINI_MODEL=${GEMINI_MODEL}
+      - GEMINI_TEMPERATURE=${GEMINI_TEMPERATURE}
+      
+      # Other APIs
+      - DEEPGRAM_API_KEY=${DEEPGRAM_API_KEY}
+      - ELEVEN_API_KEY=${ELEVEN_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    
+    volumes:
+      - ./logs:/app/logs
+    
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  syraa-agent:
+    build: .
+    container_name: syraa-agent
+    depends_on:
+      - syraa-mcp-server
+    environment:
+      # Same environment variables as MCP server
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
+      - LIVEKIT_URL=${LIVEKIT_URL}
+      - LIVEKIT_API_KEY=${LIVEKIT_API_KEY}
+      - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET}
+      - PLIVO_AUTH_ID=${PLIVO_AUTH_ID}
+      - PLIVO_AUTH_TOKEN=${PLIVO_AUTH_TOKEN}
+      - PLIVO_PHONE_NUMBER=${PLIVO_PHONE_NUMBER}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - GEMINI_MODEL=${GEMINI_MODEL}
+      - GEMINI_TEMPERATURE=${GEMINI_TEMPERATURE}
+      - DEEPGRAM_API_KEY=${DEEPGRAM_API_KEY}
+      - ELEVEN_API_KEY=${ELEVEN_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      
+      # MCP Server URL (internal Docker network)
+      - MCP_SERVER_URL=http://syraa-mcp-server:8000
+    
+    volumes:
+      - ./logs:/app/logs
+    
+    restart: unless-stopped
+    
+    command: ["python", "agent.py"]
+
+volumes:
+  logs:
